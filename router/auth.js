@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
-import user from "../Module/User.js";
+import User from "../Module/User.js";
 
 
 dotenv.config();
@@ -20,13 +20,13 @@ router.post('/SignUp', async (req, res) => {
             return res.status(400).json({ message: "Emails do not match" });
         }
 
-        const newUser = new user({
+        const newuser = new User({
             firstName, middleName, lastName, Email, confirmEmail,
             dateOfBirth, phoneNumber, address, zipCode, gender,
             password, confirmPassword
         });
 
-        await newUser.save();
+        await newuser.save();
 
         res.status(201).json({ message: "User registered successfully" });
     } catch (error) {
@@ -37,9 +37,9 @@ router.post('/SignUp', async (req, res) => {
 router.post('/Login', async (req, res) => {
     try {
         const { Email, password } = req.body;
-        const foundUser = await user.findOne({ Email });
+        const founduser = await User.findOne({ Email });
 
-        if (!foundUser || !(await foundUser.comparePassword(password))) {
+        if (!founduser || !(await founduser.comparePassword(password))) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
         const token = jwt.sign({ id: foundUser._id }, process.env.JWT, { expiresIn: '1h' });
@@ -63,7 +63,7 @@ router.post('/ForgotPassword', async (req, res) => {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: process.env.EMAIL_USER,
+                User: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
             }
         });
@@ -98,21 +98,21 @@ router.post('/ResetPassword', async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
 
-        const foundUser = await User.findById(decoded.id);
-        if (!foundUser) {
+        const founduser = await User.findById(decoded.id);
+        if (!founduser) {
             return res.status(404).json({ message: "User not found" });
         }
 
 
         const salt = await bcrypt.genSalt(10);
-        foundUser.password = await bcrypt.hash(password, salt);
+        founduser.password = await bcrypt.hash(password, salt);
 
 
-        if (foundUser.confirmPassword) {
-            foundUser.confirmPassword = foundUser.password;
+        if (founduser.confirmPassword) {
+            founduser.confirmPassword = founduser.password;
         }
 
-        await foundUser.save();
+        await founduser.save();
 
         res.json({ message: 'Password has been reset successfully' });
     } catch (error) {

@@ -1,7 +1,8 @@
-import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
-const userSchema = new mongoose.Schema({
+
+const UserSchema = new mongoose.Schema({
     firstName: { type: String, required: true },
     middleName: { type: String, required: true },
     lastName: { type: String, required: true },
@@ -16,7 +17,7 @@ const userSchema = new mongoose.Schema({
     confirmPassword: { type: String, required: true }
 }, { timestamps: true });
 
-userSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
 
     try {
@@ -28,8 +29,8 @@ userSchema.pre('save', async function (next) {
     }
 });
 
-userSchema.methods.comparePassword = async function (candidatePassword) {
+UserSchema.methods.comparePassword = async function (candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model('user', userSchema);
+export default mongoose.model('user', UserSchema);

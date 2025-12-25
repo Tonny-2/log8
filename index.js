@@ -19,7 +19,7 @@ connectDB(
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/auth', router);
+app.use('/auth', router);
 
 app.get('/', (req, res) => {
     res.send('Backend is running');
