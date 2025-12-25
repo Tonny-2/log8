@@ -9,7 +9,7 @@ dotenv.config();
 const router = express.Router();
 
 
-router.post('/SignUp', async (req, res) => {
+router.post('/signup', async (req, res) => {
     try {
         const { firstName, middleName, lastName, Email, confirmEmail, dateOfBirth, phoneNumber, address, zipCode, gender, password, confirmPassword } = req.body;
 
