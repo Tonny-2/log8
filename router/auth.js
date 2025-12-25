@@ -50,25 +50,76 @@ router.post('/Login', async (req, res) => {
 
 });
 
-router.post('/ForgotPassword', (req, res) => {
-    console.log("Forgot password for:", req.body.email);
-    res.json({ message: "If that email exists, a reset link has been sent." });
+router.post('/ForgotPassword', async (req, res) => {
+    const {email} = req.body;
+    try {
+        const user = await User.findOne({email});
+        if (!user) {
+            return res.status(404).json({message: "User not found"});
+        }
+
+        const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: '1h'});
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Reset Password Link',
+            text: `Click the link to reset your password: http://localhost:5173/reset-password/${token}`
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                return res.status(500).json({message: "Error sending email"});
+            }
+            res.status(200).json({message: "Reset link sent to your email"});
+        });
+    } catch (error) {
+        res.status(500).json({message: "Server error"});
+    }
 });
 
-router.post('/ResetPassword', (req, res) => {
+router.post('/ResetPassword', async (req, res) => {
     const { token, password } = req.body;
 
-    if (!token) {
-        return res.status(400).json({ message: 'Token is required' });
+    if (!token || !password) {
+        return res.status(400).json({ message: 'Token and password are required' });
     }
 
     try {
 
-        console.log("Resetting password with token:", token);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+
+        const foundUser = await User.findById(decoded.id);
+        if (!foundUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+
+        const salt = await bcrypt.genSalt(10);
+        foundUser.password = await bcrypt.hash(password, salt);
+
+
+        if (foundUser.confirmPassword) {
+            foundUser.confirmPassword = foundUser.password;
+        }
+
+        await foundUser.save();
+
         res.json({ message: 'Password has been reset successfully' });
     } catch (error) {
+        console.error("Reset error:", error);
         return res.status(400).json({ message: 'Token is invalid or expired' });
     }
 });
+
 
 export default router;
